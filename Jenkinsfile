@@ -68,48 +68,47 @@ pipeline {
             }
         }
 
-
-    stage('Tag & Push to DockerHub') {
-        steps {
-            script {
-                withDockerRegistry(credentialsId: 'docker') {
-                    sh 'docker tag zomato balu361988/zomato:latest'
-                    sh 'docker push balu361988/zomato:latest'
+        stage('Tag & Push to DockerHub') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker') {
+                        sh 'docker tag zomato balu361988/zomato:latest'
+                        sh 'docker push balu361988/zomato:latest'
+                    }
                 }
             }
         }
-    }
 
-    stage('Docker Image scan') {
-        steps {
-            sh "trivy image --format table -o trivy-image-report.html balu361988/zomato:latest"
+        stage('Docker Image scan') {
+            steps {
+                sh "trivy image --format table -o trivy-image-report.html balu361988/zomato:latest"
+            }
         }
-    }
 
-    stage('Docker Scout Scan') {
-        steps {
-            script {
-                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                    sh '''
-                    if docker scout version > /dev/null 2>&1; then
-                        docker scout quickview balu361988/zomato:latest
-                        docker scout cves balu361988/zomato:latest
-                        docker scout recommendations balu361988/zomato:latest
-                    else
-                        echo "Docker Scout not installed. Skipping scout scans."
-                    fi
-                    '''
+        stage('Docker Scout Scan') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                        sh '''
+                            if docker scout version > /dev/null 2>&1; then
+                                docker scout quickview balu361988/zomato:latest
+                                docker scout cves balu361988/zomato:latest
+                                docker scout recommendations balu361988/zomato:latest
+                            else
+                                echo "Docker Scout not installed. Skipping scout scans."
+                            fi
+                        '''
+                    }
                 }
             }
         }
-    }
 
-    stage('Deploy to Container') {
-        steps {
-            sh 'docker run -d --name zomato -p 3000:3000 balu361988/zomato:latest'
+        stage('Deploy to Container') {
+            steps {
+                sh 'docker run -d --name zomato -p 3000:3000 balu361988/zomato:latest'
+            }
         }
-    }
-
+    } // ✅ Closing the 'stages' block
 
     post {
         always {
