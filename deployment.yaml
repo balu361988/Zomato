@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zomato
-  labels:
-    app: zomato
 spec:
   replicas: 1
   selector:
@@ -16,24 +14,20 @@ spec:
     spec:
       containers:
       - name: zomato
-        image: balu361988/zomato:latest  # 🔄 Updated to match your Docker Hub image
+        image: balu361988/zomato:latest  # this will be replaced by Jenkins
         ports:
         - containerPort: 3000
-
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: zomato
-  labels:
-    app: zomato
 spec:
   type: NodePort
-  ports:
-  - port: 3000
-    targetPort: 3000
-    nodePort: 30002
   selector:
     app: zomato
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30002
 
