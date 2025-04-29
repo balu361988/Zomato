@@ -103,9 +103,16 @@ pipeline {
             }
         }
 
-        stage('Deploy to Container') {
+       stage('Deploy to Kubernetes') {
             steps {
-                sh 'docker run -d --name zomato -p 3000:3000 balu361988/zomato:latest'
+                script {
+                    echo "Deploying to Kubernetes with image: ${FULL_IMAGE_NAME}"
+                    sh """
+                        sed -i 's|image: .*|image: ${FULL_IMAGE_NAME}|' deployment.yaml
+                        kubectl apply -f deployment.yaml --validate=false
+                        kubectl rollout status deployment/nodejs-app
+                    """
+                }
             }
         }
     } // ✅ Closing the 'stages' block
