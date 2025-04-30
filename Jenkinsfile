@@ -103,14 +103,14 @@ pipeline {
             }
         }
 
-       stage('Deploy to Kubernetes') {
+            stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    echo "Deploying to Kubernetes with image: ${FULL_IMAGE_NAME}"
+                    echo "Deploying to Kubernetes with image: ${DOCKER_IMAGE}"
                     sh """
-                        sed -i 's|image: .*|image: ${FULL_IMAGE_NAME}|' deployment.yaml
+                        sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' deployment.yaml
                         kubectl apply -f deployment.yaml --validate=false
-                        kubectl rollout status deployment/nodejs-app
+                        kubectl rollout status deployment/zomato
                     """
                 }
             }
