@@ -102,19 +102,22 @@ pipeline {
                 }
             }
         }
-
-            stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    echo "Deploying to Kubernetes with image: ${DOCKER_IMAGE}"
-                    sh """
-                        sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' deployment.yaml
-                        kubectl apply -f deployment.yaml --validate=false
-                        kubectl rollout status deployment/zomato
-                    """
-                }
-            }
+        stage('Deploy to Kubernetes') {
+    environment {
+        DOCKER_IMAGE = 'balu361988/zomato:latest'
+    }
+    steps {
+        script {
+            echo "Deploying to Kubernetes with image: ${DOCKER_IMAGE}"
+            sh """
+                sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' deployment.yaml
+                kubectl apply -f deployment.yaml --validate=false
+                kubectl rollout status deployment/zomato
+            """
         }
+    }
+}
+
     } // ✅ Closing the 'stages' block
 
     post {
