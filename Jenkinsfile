@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         jdk 'jdk17'
-        nodejs 'node23'  // ✅ match the exact configured name
+        nodejs 'node23'
     }
 
     environment {
@@ -101,23 +101,25 @@ pipeline {
                     }
                 }
             }
-stage('Deploy to Kubernetes') {
-    environment {
-        KUBECONFIG = '/var/lib/jenkins/.kube/config'
-    }
-    steps {
-        script {
-            def imageTag = "${DOCKER_IMAGE}"
-            echo "Deploying to Kubernetes with image: ${imageTag}"
-            sh """
-                sed -i 's|image: .*|image: ${imageTag}|' deployment.yaml
-                kubectl apply -f deployment.yaml --validate=false
-            """
-        }
-    }
-}
+        } // ✅ FIXED: Closed 'Docker Scout Scan' stage here
 
-    } // ✅ Closing the 'stages' block
+        stage('Deploy to Kubernetes') {
+            environment {
+                KUBECONFIG = '/var/lib/jenkins/.kube/config'
+            }
+            steps {
+                script {
+                    def imageTag = "balu361988/zomato:latest"
+                    echo "Deploying to Kubernetes with image: ${imageTag}"
+                    sh """
+                        sed -i 's|image: .*|image: ${imageTag}|' deployment.yaml
+                        kubectl apply -f deployment.yaml --validate=false
+                    """
+                }
+            }
+        }
+
+    } // end of stages
 
     post {
         always {
