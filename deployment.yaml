@@ -14,9 +14,9 @@ spec:
     spec:
       containers:
       - name: zomato
-        image: balu361988/zomato:latest  # ✅ use your local image
+        image: balu361988/zomato:latest
         ports:
-        - containerPort: 80   # ✅ Nginx serves on port 80
+        - containerPort: 9090   # ✅ Corrected port
 ---
 apiVersion: v1
 kind: Service
@@ -28,6 +28,6 @@ spec:
     app: zomato
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 9090         # ✅ Forward traffic to 9090 inside the pod
       nodePort: 30002
 
