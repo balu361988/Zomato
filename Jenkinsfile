@@ -101,18 +101,17 @@ pipeline {
                     }
                 }
             }
-        }
-        stage('Deploy to Kubernetes') {
+stage('Deploy to Kubernetes') {
     environment {
-        DOCKER_IMAGE = 'balu361988/zomato:latest'
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
     steps {
         script {
-            echo "Deploying to Kubernetes with image: ${DOCKER_IMAGE}"
+            def imageTag = "${DOCKER_IMAGE}"
+            echo "Deploying to Kubernetes with image: ${imageTag}"
             sh """
-                sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' deployment.yaml
+                sed -i 's|image: .*|image: ${imageTag}|' deployment.yaml
                 kubectl apply -f deployment.yaml --validate=false
-                kubectl rollout status deployment/zomato
             """
         }
     }
