@@ -8,7 +8,7 @@ pipeline {
 
   environment {
     DOCKER_HUB_USER = "balu361988"
-    IMAGE_NAME = "small-project"
+    IMAGE_NAME = "zomato"
     IMAGE_TAG = "v${BUILD_NUMBER}"
     FULL_IMAGE_NAME = "${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
     SCANNER_HOME = tool 'sonar-scanner'
@@ -44,7 +44,7 @@ pipeline {
     stage('Quality Gate') {
       steps {
         script {
-          waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
+          waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
         }
       }
     }
