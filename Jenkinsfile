@@ -1,151 +1,62 @@
 pipeline {
-    agent any
+  agent any
 
-    tools {
-        jdk 'jdk17'
-        nodejs 'node23'
+  environment {
+    DOCKER_HUB_USER = "balu361988"
+    IMAGE_NAME = "zomato"                       // 🔁 Changed from 'small-project'
+    IMAGE_TAG = "v${BUILD_NUMBER}"
+    FULL_IMAGE_NAME = "${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+  }
+
+  stages {
+    stage('Checkout Code') {
+      steps {
+        checkout scm
+      }
     }
 
-    environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+    stage('Build Docker Image') {
+      steps {
+        script {
+          dockerImage = docker.build("${FULL_IMAGE_NAME}", "--no-cache .")
+        }
+      }
     }
 
-    stages {
-        stage('Clean Workspace') {
-            steps {
-                cleanWs()
-            }
+    stage('Push Docker Image to DockerHub') {
+      steps {
+        script {
+          docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
+            dockerImage.push()
+          }
         }
-
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/balu361988/Zomato.git'
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonar-server') {
-                    sh '''
-                        ${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectName=zomato \
-                        -Dsonar.projectKey=zomato
-                    '''
-                }
-            }
-        }
-
-        stage('Code Quality Gate') {
-            steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
-                }
-            }
-        }
-
-        stage('Install NPM Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('OWASP Dependency Check') {
-            steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --out .', odcInstallation: 'DP-Check'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-
-        stage('File system scan') {
-            steps {
-                sh "trivy fs --format table -o trivy-fs-report.html ."
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t zomato .'
-            }
-        }
-
-        stage('Tag & Push to DockerHub') {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker') {
-                        sh 'docker tag zomato balu361988/zomato:latest'
-                        sh 'docker push balu361988/zomato:latest'
-                    }
-                }
-            }
-        }
-
-        stage('Docker Image scan') {
-            steps {
-                sh "trivy image --format table -o trivy-image-report.html balu361988/zomato:latest"
-            }
-        }
-
-        stage('Docker Scout Scan') {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                        sh '''
-                            if docker scout version > /dev/null 2>&1; then
-                                docker scout quickview balu361988/zomato:latest
-                                docker scout cves balu361988/zomato:latest
-                                docker scout recommendations balu361988/zomato:latest
-                            else
-                                echo "Docker Scout not installed. Skipping scout scans."
-                            fi
-                        '''
-                    }
-                }
-            }
-        } // ✅ FIXED: Closed 'Docker Scout Scan' stage here
-
-        stage('Deploy to Kubernetes') {
-            environment {
-                KUBECONFIG = '/var/lib/jenkins/.kube/config'
-            }
-            steps {
-                script {
-                    def imageTag = "balu361988/zomato:latest"
-                    echo "Deploying to Kubernetes with image: ${imageTag}"
-                    sh """
-                        sed -i 's|image: .*|image: ${imageTag}|' deployment.yaml
-                        kubectl apply -f deployment.yaml --validate=false
-                    """
-                }
-            }
-        }
-
-    } // end of stages
-
-    post {
-        always {
-            emailext(
-                attachLog: true,
-                subject: "'${currentBuild.result}'",
-                body: """
-                    <html>
-                    <body>
-                        <div style="background-color: #FFA07A; padding: 10px; margin-bottom: 10px;">
-                            <p style="color: white; font-weight: bold;">Project: ${env.JOB_NAME}</p>
-                        </div>
-                        <div style="background-color: #90EE90; padding: 10px; margin-bottom: 10px;">
-                            <p style="color: white; font-weight: bold;">Build Number: ${env.BUILD_NUMBER}</p>
-                        </div>
-                        <div style="background-color: #87CEEB; padding: 10px; margin-bottom: 10px;">
-                            <p style="color: white; font-weight: bold;">URL: ${env.BUILD_URL}</p>
-                        </div>
-                    </body>
-                    </html>
-                """,
-                to: 'face361988@gmail.com',
-                mimeType: 'text/html',
-                attachmentsPattern: 'trivy-image-report.html'
-            )
-        }
+      }
     }
+
+    stage('Deploy to Kubernetes') {
+      environment {
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+      }
+      steps {
+        script {
+          echo "Deploying ${FULL_IMAGE_NAME} to Kubernetes..."
+          sh """
+            sed -i 's|image: .*|image: ${FULL_IMAGE_NAME}|' k8s-deployment.yaml
+            kubectl apply -f k8s-deployment.yaml --validate=false
+            kubectl rollout status deployment/zomato
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Zomato deployed successfully!"
+    }
+    failure {
+      echo "❌ Zomato deployment failed."
+    }
+  }
 }
 

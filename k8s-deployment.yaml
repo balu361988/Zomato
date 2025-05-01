@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: zomato
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: zomato
@@ -16,7 +16,7 @@ spec:
       - name: zomato
         image: balu361988/zomato:latest
         ports:
-        - containerPort: 9090   # ✅ Corrected port
+        - containerPort: 3001   # ✅ Corrected port
 ---
 apiVersion: v1
 kind: Service
@@ -27,7 +27,6 @@ spec:
   selector:
     app: zomato
   ports:
-    - port: 80
-      targetPort: 9090         # ✅ Forward traffic to 9090 inside the pod
+    - port: 3001
+      targetPort: 3001        
       nodePort: 30002
-
