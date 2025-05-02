@@ -33,8 +33,8 @@ pipeline {
         withSonarQubeEnv('sonar-server') {
           sh '''
             ${SCANNER_HOME}/bin/sonar-scanner \
-              -Dsonar.projectKey=small-project \
-              -Dsonar.projectName=small-project \
+              -Dsonar.projectKey=zomato \
+              -Dsonar.projectName=zomato \
               -Dsonar.sources=.
           '''
         }
@@ -98,7 +98,7 @@ pipeline {
           sh """
             sed -i 's|image: .*|image: ${FULL_IMAGE_NAME}|' k8s-deployment.yaml
             kubectl apply -f k8s-deployment.yaml --validate=false
-            kubectl rollout status deployment/small-project
+            kubectl rollout status deployment/zomato
           """
         }
       }
